@@ -1,0 +1,4 @@
+interface:
+  display_name: "Model Handoff"
+  short_description: "Switch models safely: one click confirms the handoff"
+  default_prompt: "$model-handoff 这个任务需要换个更强的模型接手"
