@@ -16,9 +16,11 @@ if observed.lower() == candidate.lower(): 命中同一行
 
 | 用户可见名（写进确认项） | 层级 | `<model>` 已确认标识 | 能力限制 |
 | --- | --- | --- | --- |
-| Terra | SCOUT | 未确认 | 纯文本 |
-| Sol | RESEARCHER | 未确认 | 纯文本 |
-| Sonnet 5 | ORCHESTRATOR | 未确认 | 文本+图像输入 |
+| Gemini 3.7 Flash | SCOUT | 未确认 | 未确认；默认海量阅读器，单轮失败后仍可再次调用 |
+| Terra | SCOUT | `gpt-5.6-terra` | 纯文本；仅用户点名的后备，不写进默认改派 |
+| Sol | ANALYST | 未确认 | 纯文本；与 Sonnet 5 同级 |
+| Sonnet 5 | ANALYST | `claude-sonnet-5` | 文本+图像输入 |
+| Grok 4.6 | ANALYST | `grok-4.6` | 文本+图像输入 |
 | Opus 5 | ARCHITECT | `claude-opus-5` | 文本+图像输入 |
 
 **第一列**：用户在模型选择器里看到的名字，原样写进 `ask_followup_question` 的 `question` 与确认项，让用户照着去切换。
@@ -42,24 +44,30 @@ if observed.lower() == candidate.lower(): 命中同一行
 ## 层级判定
 
 1. 实读标识（小写归一后）与第三列任一已确认标识匹配 → 采用该行层级。
-2. 实读标识不在表中 → 按 ORCHESTRATOR 工作，并在输出中说明实读标识，请用户确认应归入哪一层级。
-3. `<model>` 字段缺失 → 身份为 `UNVERIFIED`，按 ORCHESTRATOR 工作，输出中标注「身份未自证」。
+2. 实读标识不在表中 → 按 ANALYST 工作，并在输出中说明实读标识，请用户确认应归入哪一层级。
+3. `<model>` 字段缺失 → 身份为 `UNVERIFIED`，按 ANALYST 工作，输出中标注「身份未自证」。
 
 第 2、3 种情况下**不得自称 ARCHITECT**，也不得作出强制升级清单中的决策。宁可多一次交接，不可让未确认层级的模型下架构结论。
 
 ## IDENTITY_CHECK 的判定
 
-ACK 声称的目标模型经本表解析出的层级，与自读标识解析出的层级不一致时 → 拒绝接管。
+只比较**当前进程**的 `<model>` 与 ACK 目标行。确认项、`ROUTE_ACK` 文本、用户说「已切换」都不能改 `<model>`。
 
-匹配大小写无关，写法也不必逐字相同（"Opus 5"与 `claude-opus-5` 视为同一行）；解析到**不同行**才算不一致。用户说"切到 opus 了"这类简写也按同一行处理。
+1. ACK 目标名（第一列或同义简写）与自读标识（第三列）解析到**同一行** → 通过。
+2. 解析到**不同行** → `SWITCH_NOT_APPLIED`。拒绝接管，停止；不得再发确认项。
+3. 同一条消息明确是「就用当前模型继续，并标注哪些结论未获决策授权」→ 不接管目标行，按当前行层级做完并标注未获授权结论。
+
+匹配大小写无关，写法也不必逐字相同（"Opus 5"与 `claude-opus-5` 视为同一行）。用户说"切到 opus 了"这类简写也按同一行处理，但仍以实读 `<model>` 为准。
+
+Sol 与 Sonnet 5 是**不同行、同一层级**。ACK 写 Sonnet 5 而实读是 Sol（或反过来）→ 仍算 `SWITCH_NOT_APPLIED`，因为选择器上的名字不同；层级相同不等于身份相同。
 
 ## 层级顺序
 
 ```text
-SCOUT < RESEARCHER < ORCHESTRATOR < ARCHITECT
+SCOUT < ANALYST < ARCHITECT
 ```
 
-顺序只用于判断"当前层级是否足以作某项决策"。它不是必须逐级经过的流水线——简单调查可以直接由 SCOUT 完成，高风险问题可以从 ORCHESTRATOR 直接升到 ARCHITECT。
+顺序只用于判断"当前层级是否足以作某项决策"。它不是必须逐级经过的流水线——简单调查可以直接由 SCOUT 完成，高风险问题可以从 ANALYST 直接升到 ARCHITECT。
 
 ## 未启用：平台前缀路由（未来触发条件）
 
