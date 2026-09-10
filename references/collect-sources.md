@@ -10,41 +10,15 @@ COLLECT 写 READ_LIST 或填 `result` 时读取。DECIDE 禁止使用本文件�
 
 ## 顺序
 
-1. 代码、定义、调用方、影响面 → Graft
-2. 理论、规则语义、案例关系、设计决策 → IWE
+先走全局搜索梯子：代码 → Graft MCP；理论/设计决策 → IWE MCP；未命中、未索引或 MCP 不可用再自己精确搜。本文件只补充交接采集的例外。
+
+1. 代码、定义、调用方、影响面 → Graft MCP（穷举用 `graft_find_all` / CLI `graft grep`，不要用 ranked ask 冒充完整列表）
+2. 理论、规则语义、案例关系、设计决策 → IWE MCP；导航页不算证据
 3. 仍缺精确行号，或 Graft 标明 `+N more lines` → 只读该 span
-4. 无索引文件（含多数 Markdown）→ 直接读文件
+4. 无索引文件（含多数 Markdown）→ 直接读文件。对 Markdown 跑 skeleton 得到「no definitions」不是错误
 5. 路径不存在 → `NOT_FOUND`，可注明实际发现的邻近真实路径，不新增 READ_LIST 条目
 
-## Graft
-
-优先已接入的 Graft MCP（`graft_find_code` / `graft_file_api` / `graft_trace_calls` / `graft_find_all` / `graft_repo_map`）。工具不存在或返回未知工具时，立即改 CLI，不要对同一 MCP 名重试：
-
-```text
-graft map
-graft ask "<question>" --source
-graft skeleton <file>
-graft callers <symbol>
-graft grep "<literal>"
-```
-
-- 理解或编辑：top node 即答案，引用其 `covers:` file:line，从 `--source` 的 crux 抽取。
-- 穷举「每一处 / 每一个调用方」：用 `graft grep`，不要用 ranked ask 冒充完整列表。
-- Markdown 或无定义文件：skeleton 返回「no definitions indexed」是正常现象，改 `read_file`。
-- 采集结束可在 briefing 记累计 token 节省；不因此扩大清单。
-
-## IWE
-
-只读默认：
-
-```text
-retrieve
-  max-documents: 6
-  max-tokens: 6000
-  max-document-tokens: 1800
-```
-
-写操作（create/update/delete/attach）需要用户显式授权，且先 dry-run。IWE 未命中业务真源时，不要把导航页当成证据，改读 READ_LIST 指定文件。
+MCP 不可用或返回未知工具时立即改 CLI，不要对同一 MCP 名重试。采集结束可在 briefing 记累计 token 节省；不因此扩大清单。
 
 ## Git 合同字段
 

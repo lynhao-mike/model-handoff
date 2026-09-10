@@ -1,4 +1,4 @@
 interface:
   display_name: "Model Handoff"
-  short_description: "Cheap models collect; expensive models decide from briefing"
-  default_prompt: "$model-handoff 先采集成简报，再切高端只做决策"
+  short_description: "Named invoke first; hand off or confirm stay-on-model"
+  default_prompt: "$model-handoff 先判定交接；该直办则确认执行模式后再开工"
